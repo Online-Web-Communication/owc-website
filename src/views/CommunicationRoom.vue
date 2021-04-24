@@ -7,6 +7,7 @@
       @click="backToLogin()"
       ><b-icon class="mr-2" icon="arrow-left-circle"></b-icon>Çıkış</b-button
     >
+    <div id="video-grid"></div>
     <div
       v-if="screens === 1"
       class="row row-cols-1 justify-content-center align-items-center"
@@ -48,25 +49,23 @@
         </video>
       </div>
     </div>
-    <video class="personalScreen" id="localVideoa" autoplay="autoplay">
+    <div id="biz" class="personelScreen"></div>
+    <!--<video class="personalScreen" id="localVideoa" autoplay="autoplay">
       <source
         src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/3/h264.mov"
         type="video/mp4"
       />
-    </video>
+    </video>-->
   </div>
 </template>
 
 <script>
-const io = require("socket.io-client");
-const socket = io();
-
 export default {
   data() {
     return {
       customClass: "",
       screens: 0,
-      link: "https://s3-us-west-2.amazonaws.com/s.cdpn.io/3/h264.mov",
+      //link: "https://s3-us-west-2.amazonaws.com/s.cdpn.io/3/h264.mov",
       iceServers: {
         //'iceServer': [{ 'urls': 'stun:stun.services.mozilla.com' }, { 'urls': 'stun:stun.l.google.com:19302' }]
         iceServers: [
@@ -90,6 +89,10 @@ export default {
       localVideo: "",
       remoteVideo: "",
       number: 0,
+      //
+      myPeer: "",
+      videoGrid: "",
+      peers: {},
     };
   },
   watch: {
@@ -100,158 +103,67 @@ export default {
       }
     },
   },
-  mounted() {
-    this.localVideo = document.getElementById("localVideo");
-    this.screens = 3;
-    //this.remoteVideo = document.getElementById('remoteVideo')
-    socket.on("created", (room) => {
-      console.log(room);
-      navigator.mediaDevices
-        .getUserMedia(this.streamConstraints)
-        .then((stream) => {
-          this.localStream = stream;
-          this.localVideo.srcObject = stream;
-          this.isCaller = true;
-        })
-        .catch((err) => {
-          console.log("goromm error", err);
-        });
-    });
-
-    socket.on("candidate", (event) => {
-      var candidate = new RTCIceCandidate({
-        sdpMLineIndex: event.label,
-        candidate: event.candidate,
+  methods: {
+    connectToNewUser(userId, stream) {
+      const call = this.$peer.call(userId, stream);
+      const video = document.createElement("video");
+      call.on("stream", (userVideoStream) => {
+        this.addVideoStream(video, userVideoStream);
       });
-      console.log("received candidate", candidate);
-      this.rtcPeerConnection.addIceCandidate(candidate);
-    });
+      call.on("close", () => {
+        video.remove();
+      });
 
-    socket.on("joined", (room) => {
-      console.log(room);
+      this.peers[userId] = call;
+    },
+    addVideoStream(video, stream) {
+      video.srcObject = stream;
+      video.addEventListener("loadedmetadata", () => {
+        video.play();
+      });
+      this.videoGrid.append(video);
+    },
+    createVideo() {
+      const myVideo = document.createElement("video");
+      myVideo.muted = true;
+
       navigator.mediaDevices
-        .getUserMedia(this.streamConstraints)
-        .then((stream) => {
-          this.localStream = stream;
-          this.localVideo.srcObject = stream;
-          socket.emit("ready", this.roomNumber);
+        .getUserMedia({
+          video: true,
+          audio: true,
         })
-        .catch((err) => {
-          console.log("goromm error", err);
+        .then((stream) => {
+          this.addVideoStream(myVideo, stream);
+
+          this.$peer.on("call", (call) => {
+            call.answer(stream);
+            const video = document.createElement("video");
+            call.on("stream", (userVideoStream) => {
+              this.addVideoStream(video, userVideoStream);
+            });
+          });
+
+          this.$store.state.socket.on("user-connected", (userId) => {
+            this.connectToNewUser(userId, stream);
+          });
         });
+    },
+  },
+  mounted() {
+    this.videoGrid = document.getElementById("video-grid");
+
+    this.createVideo();
+
+    this.$store.state.socket.on("user-disconnected", (userId) => {
+      if (this.peers[userId]) this.peers[userId].close();
     });
 
-    socket.on("ready", () => {
-      if (this.isCaller) {
-        this.rtcPeerConnection = new RTCPeerConnection(this.iceServers);
-        this.rtcPeerConnection.onicecandidate = this.onIceCandidate;
-        this.rtcPeerConnection.ontrack = this.onAddStream;
-        this.rtcPeerConnection.addTrack(
-          this.localStream.getTracks()[0],
-          this.localStream
-        );
-        this.rtcPeerConnection.addTrack(
-          this.localStream.getTracks()[1],
-          this.localStream
-        );
-        this.rtcPeerConnection
-          .createOffer()
-          .then((sessionDescription) => {
-            this.rtcPeerConnection.setLocalDescription(sessionDescription);
-            socket.emit("offer", {
-              type: "offer",
-              sdp: sessionDescription,
-              room: this.roomNumber,
-            });
-          })
-          .catch((err) => {
-            console.log("web hata", err);
-          });
-      }
-    });
-
-    socket.on("offer", (event) => {
-      if (!this.isCaller) {
-        this.rtcPeerConnection = new RTCPeerConnection(this.iceServers);
-        this.rtcPeerConnection.onicecandidate = this.onIceCandidate;
-        this.rtcPeerConnection.ontrack = this.onAddStream;
-        this.rtcPeerConnection.addTrack(
-          this.localStream.getTracks()[0],
-          this.localStream
-        );
-        this.rtcPeerConnection.addTrack(
-          this.localStream.getTracks()[1],
-          this.localStream
-        );
-        this.rtcPeerConnection.setRemoteDescription(
-          new RTCSessionDescription(event)
-        );
-        this.rtcPeerConnection
-          .createAnswer()
-          .then((sessionDescription) => {
-            this.rtcPeerConnection.setLocalDescription(sessionDescription);
-            socket.emit("answer", {
-              type: "answer",
-              sdp: sessionDescription,
-              room: this.roomNumber,
-            });
-          })
-          .catch((err) => {
-            console.log("web hata", err);
-          });
-      }
-    });
-
-    socket.on("answer", (event) => {
-      this.rtcPeerConnection.setRemoteDescription(
-        new RTCSessionDescription(event)
-      );
+    this.$peer.on("open", (id) => {
+      this.$store.state.socket.emit("join-room", "b", id);
     });
   },
-  methods: {
-    goRoom1() {
-      if (this.roomNumber == "") {
-        alert("doldurrr");
-      } else {
-        socket.emit("create or join", this.roomNumber);
-        this.videolar = true;
-      }
-    },
-    onAddStream(event) {
-      //document.getElementById(`remoteVideo${this.number}`).srcObject = event.streams[0]
-
-      if (this.number % 2 == 0) {
-        console.log(this.number);
-        let video = document.createElement("video");
-        video.srcObject = event.streams[0];
-        video.id = `remoteVideo${this.number}`;
-        video.autoplay = "autoplay";
-        document.getElementById("consultingRoom").appendChild(video);
-        this.number++;
-        return;
-      }
-      let a = this.number - 1;
-      document.getElementById(`remoteVideo${a}`).srcObject = event.streams[0];
-      this.number++;
-      /* çalışan
-             document.getElementById('remoteVideo').srcObject = event.streams[0]
-             remoteStream = event.streams[0]*/
-    },
-    onIceCandidate(event) {
-      if (event.candidate) {
-        console.log("sending ice candidate", event.candidate);
-        socket.emit("candidate", {
-          type: "candidate",
-          label: event.candidate.sdpMLineIndex,
-          id: event.candidate.sdpMid,
-          candidate: event.candidate.candidate,
-          room: this.roomNumber,
-        });
-      }
-    },
-    backToLogin() {
-      this.$router.push("/");
-    },
+  created() {
+    this.$store.dispatch("baglan");
   },
 };
 </script>

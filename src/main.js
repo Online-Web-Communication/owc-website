@@ -16,6 +16,19 @@ Vue.use(IconsPlugin)
 
 Vue.config.productionTip = false
 
+import VuePeerJS from 'vue-peerjs';
+import Peer from 'peerjs';
+
+Vue.use(VuePeerJS, new Peer({
+  iceServers: [
+    {
+      urls: "stun:18.195.35.248:3478",
+      username: "1619152553",
+      credentials: "Eq1fpwbkUTDNSJUW4w+Rh+n9Ulc=",
+    },
+  ],
+}));
+
 new Vue({
   router,
   store,
