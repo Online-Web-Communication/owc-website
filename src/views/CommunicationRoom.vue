@@ -7,55 +7,20 @@
       @click="backToLogin()"
       ><b-icon class="mr-2" icon="arrow-left-circle"></b-icon>Çıkış</b-button
     >
-    <div id="video-grid"></div>
     <div
-      v-if="screens === 1"
-      class="row row-cols-1 justify-content-center align-items-center"
-    >
-      <div class="col" v-for="data in screens" :key="data">
-        <video
-          style="width: 100% !important; height: 99vh !important"
-          id="localVideo"
-          autoplay="autoplay"
-          controls
-        >
-          <source :src="link" type="video/mp4" />
-        </video>
-      </div>
-    </div>
-    <div
-      v-else-if="screens === 2"
-      class="row row-cols-2 justify-content-center align-items-center"
-    >
-      <div class="col" v-for="data in screens" :key="data">
-        <video
-          style="width: 100% !important; height: 99vh !important"
-          id="localVideo"
-          autoplay="autoplay"
-          controls
-        >
-          <source :src="link" type="video/mp4" />
-        </video>
-      </div>
-    </div>
-    <div
-      v-else
+      id="videos"
       class="row justify-content-start align-items-center"
       :class="customClass"
     >
-      <div class="col" v-for="data in screens" :key="data">
-        <video id="localVideo" autoplay="autoplay" controls>
-          <source :src="link" type="video/mp4" />
-        </video>
+      <div class="col">
+        <div id="video-grid"></div>
       </div>
     </div>
-    <div id="biz" class="personelScreen"></div>
-    <!--<video class="personalScreen" id="localVideoa" autoplay="autoplay">
-      <source
-        src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/3/h264.mov"
-        type="video/mp4"
-      />
-    </video>-->
+    <video
+      class="personalScreen"
+      id="personalVideo"
+      autoplay="autoplay"
+    ></video>
   </div>
 </template>
 
@@ -63,8 +28,8 @@
 export default {
   data() {
     return {
-      customClass: "",
-      screens: 0,
+      customClass: "row-cols-1",
+      screens: 1,
       //link: "https://s3-us-west-2.amazonaws.com/s.cdpn.io/3/h264.mov",
       iceServers: {
         //'iceServer': [{ 'urls': 'stun:stun.services.mozilla.com' }, { 'urls': 'stun:stun.l.google.com:19302' }]
@@ -93,13 +58,19 @@ export default {
       myPeer: "",
       videoGrid: "",
       peers: {},
+      col: "",
     };
   },
   watch: {
     screens: function (val) {
-      if (val > 2) {
-        let screenValue = Math.ceil(val / 2);
-        this.customClass = "row-cols-" + screenValue;
+      if (val === 1) {
+        const videos = document.getElementById("videos");
+        videos.classList.remove("row-cols-2");
+        this.customClass = "row-cols-1";
+      } else if (val === 2) {
+        const videos = document.getElementById("videos");
+        videos.classList.remove("row-cols-3");
+        this.customClass = "row-cols-2";
       }
     },
   },
@@ -107,7 +78,32 @@ export default {
     connectToNewUser(userId, stream) {
       const call = this.$peer.call(userId, stream);
       const video = document.createElement("video");
+      this.screens++;
+      console.log(this.screens);
       call.on("stream", (userVideoStream) => {
+        const videos = document.getElementById("videos");
+        const column = document.createElement("div");
+        column.classList.add("col");
+        this.videoGrid.append(video);
+        column.append(this.videoGrid);
+        videos.append(column);
+        if (this.screens === 2) {
+          this.customClass = "row-cols-1";
+          video.style.height = 99 + "vh";
+          video.style.width = 100 + "%";
+        } else if (this.screens === 3) {
+          video.classList.remove("row-cols-1");
+          this.customClass = "";
+          this.customClass = "row-cols-2";
+          video.style.height = 99 + "vh";
+          video.style.width = 100 + "%";
+        } else {
+          let screenValue = Math.ceil(this.screens / 2);
+          video.classList.remove("row-cols-2");
+          this.customClass = "";
+          this.customClass = "row-cols-" + screenValue;
+          video.style.height = 49 + "vh";
+        }
         this.addVideoStream(video, userVideoStream);
       });
       call.on("close", () => {
@@ -121,10 +117,9 @@ export default {
       video.addEventListener("loadedmetadata", () => {
         video.play();
       });
-      this.videoGrid.append(video);
     },
     createVideo() {
-      const myVideo = document.createElement("video");
+      const myVideo = document.getElementById("personalVideo");
       myVideo.muted = true;
 
       navigator.mediaDevices
@@ -135,10 +130,35 @@ export default {
         .then((stream) => {
           this.addVideoStream(myVideo, stream);
 
+          //diğer kişilerin ekranı
           this.$peer.on("call", (call) => {
+            this.screens++;
             call.answer(stream);
             const video = document.createElement("video");
             call.on("stream", (userVideoStream) => {
+              const videos = document.getElementById("videos");
+              const column = document.createElement("div");
+              column.classList.add("col");
+              this.videoGrid.append(video);
+              column.append(this.videoGrid);
+              videos.append(column);
+              if (this.screens === 2) {
+                this.customClass = "row-cols-1";
+                video.style.height = 99 + "vh";
+                video.style.width = 100 + "%";
+              } else if (this.screens === 3) {
+                video.classList.remove("row-cols-1");
+                this.customClass = "";
+                this.customClass = "row-cols-2";
+                video.style.height = 99 + "vh";
+                video.style.width = 100 + "%";
+              } else {
+                let screenValue = Math.ceil(this.screens / 2);
+                video.classList.remove("row-cols-2");
+                this.customClass = "";
+                this.customClass = "row-cols-" + screenValue;
+                video.style.height = 100 + "px";
+              }
               this.addVideoStream(video, userVideoStream);
             });
           });
@@ -169,7 +189,7 @@ export default {
 </script>
 
 <style scoped>
-#localVideo {
+#video-grid {
   width: 100% !important;
   height: 350px !important;
 }
@@ -188,10 +208,6 @@ export default {
 
 .back-button:hover {
   opacity: 1 !important;
-}
-
-#localVideo {
-  width: 100% !important;
 }
 
 .personalScreen {
