@@ -13,7 +13,6 @@ export default new Vuex.Store({
   actions: {
 
     baglan(context) {
-      console.log('burada')
       context.state.socket = io("http://localhost:3000");
 
       context.state.socket.on("connect", function () {
