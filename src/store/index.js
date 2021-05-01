@@ -7,13 +7,25 @@ Vue.use(Vuex)
 export default new Vuex.Store({
   state: {
     socket: '',
+    userId: '',
+    globalPeer: '',
+    whereRouter: ''
   },
   mutations: {
+    setPeer(state, peer) {
+      state.globalPeer = peer
+    },
+    setWhereRouter(state, route){
+      state.whereRouter = route
+    }
   },
   actions: {
 
-    baglan(context) {
-      context.state.socket = io("http://localhost:3000");
+    connectServer(context, data) {
+
+      context.state.socket = io("https://e-garsonum.com");
+
+      if (context.state.socket.connected) return
 
       context.state.socket.on("connect", function () {
         console.log("bağlandı");
@@ -26,6 +38,18 @@ export default new Vuex.Store({
       });
       context.state.socket.on('error', function (err) {
         console.log(err)
+      });
+
+      context.dispatch('joinRoom', data)
+    },
+
+    joinRoom(context, data) {
+      context.state.socket.emit("join-room", { roomId: data.roomId, userId: data.userId });
+    },
+
+    openPeer(context){
+      context.state.globalPeer.on("open", (userId) => {
+        context.state.userId = userId;
       });
     }
   },

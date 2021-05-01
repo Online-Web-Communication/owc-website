@@ -41,6 +41,7 @@ export default {
   methods: {
     login() {
       if (this.roomName !== "") {
+        this.$store.commit("setWhereRouter", "LOGIN");
         this.$router.push({
           name: "CommunicationRoom",
           params: { room: this.roomName },
@@ -53,6 +54,12 @@ export default {
         });
       }
     },
+  },
+  mounted() {
+    this.$store.dispatch("openPeer");
+  },
+  created() {
+    this.$store.commit("setPeer", this.$peer);
   },
 };
 </script>
