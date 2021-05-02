@@ -11,8 +11,8 @@ const routes = [
     component: Login
   },
   {
-    path: '/communication-room/:room',
-    name: 'CommunicationRoom',
+    path: '/room/:room',
+    name: 'Room',
     component: () => import('../views/CommunicationRoom.vue')
   }
 ]
