@@ -73,6 +73,7 @@ export default {
     login() {
       if (this.roomName !== "") {
         this.$store.commit("setWhereRouter", "LOGIN");
+        this.$store.dispatch("joinRoom", { roomId: this.roomName });
         this.$router.push({
           name: "Room",
           params: { room: this.roomName },
@@ -91,6 +92,7 @@ export default {
   },
   created() {
     this.$store.commit("setPeer", this.$peer);
+    this.$store.dispatch("connectServer");
   },
 };
 </script>

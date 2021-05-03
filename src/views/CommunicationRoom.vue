@@ -19,6 +19,8 @@
 </template>
 
 <script>
+import { mapGetters } from "vuex";
+
 export default {
   data() {
     return {
@@ -34,7 +36,13 @@ export default {
       allClassList: [],
     };
   },
+  computed: {
+    ...mapGetters({ getNewPerson: "getNewPerson" }),
+  },
   watch: {
+    getNewPerson: function (val) {
+      this.connectToNewUser(val)
+    },
     clients: function (val) {
       if (val === 1 || val === 2) {
         var elements = document.getElementsByClassName("video-design-options");
@@ -74,8 +82,11 @@ export default {
     backToLogin() {
       window.location.href = "/";
     },
-    connectToNewUser(userId, stream) {
-      const call = this.$store.state.globalPeer.call(userId, stream);
+    connectToNewUser(userId) {
+      const call = this.$store.state.globalPeer.call(
+        userId,
+        this.$store.state.webStream
+      );
       this.clients++;
       const div = document.createElement("div");
       const video = document.createElement("video");
@@ -90,7 +101,7 @@ export default {
         div.remove();
       });
 
-      this.peers[userId] = call;
+      this.$store.commit("setPeersUser", { call: call, userId: userId });
     },
     addVideoStream(video, stream, div) {
       video.srcObject = stream;
@@ -113,7 +124,7 @@ export default {
       navigator.mediaDevices
         .getUserMedia(this.streamConstraints)
         .then((stream) => {
-          this.webStream = stream;
+          this.$store.commit("setWebStream", stream);
           this.addMyVideoStream(myVideo, stream);
 
           this.$store.state.globalPeer.on("call", (call) => {
@@ -199,13 +210,13 @@ export default {
     this.videoGrid = document.getElementById("video-grid");
 
     this.createVideo();
-    setTimeout(() => {
+    /*setTimeout(() => {
       this.$store.dispatch("connectServer", {
         roomId: this.$route.params.room,
         userId: this.$store.state.userId,
       });
-    }, 1500);
-    setTimeout(() => {
+    }, 1500);*/
+    /*setTimeout(() => {
       this.$store.state.socket.on("user-connected", (userId) => {
         this.connectToNewUser(userId, this.webStream);
         console.log(userId);
@@ -214,7 +225,7 @@ export default {
       this.$store.state.socket.on("user-disconnected", (userId) => {
         if (this.peers[userId]) this.peers[userId].close();
       });
-    }, 3000);
+    }, 3000);*/
   },
   created() {
     if (this.$store.state.whereRouter != "LOGIN") {

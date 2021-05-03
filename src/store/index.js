@@ -9,21 +9,44 @@ export default new Vuex.Store({
     socket: '',
     userId: '',
     globalPeer: '',
-    whereRouter: ''
+    whereRouter: '',
+    peers: {},
+    webStream: '',
+    newPerson: ''
   },
   mutations: {
     setPeer(state, peer) {
       state.globalPeer = peer
     },
-    setWhereRouter(state, route){
+    setWhereRouter(state, route) {
       state.whereRouter = route
+    },
+    setPeersUser(state, data) {
+      state.peers[data.userId] = data.call;
+    },
+    setClosePeerUser(state, userId) {
+      state.peers[userId].close();
+    },
+    setWebStream(state, stream) {
+      state.webStream = stream
+    },
+    setUserId(state, userId) {
+      state.userId = userId
+    },
+    setNewPerson(state, userId) {
+      state.newPerson = userId
+    } 
+  },
+  getters: {
+    getNewPerson(state){
+      return state.newPerson
     }
   },
   actions: {
 
-    connectServer(context, data) {
+    connectServer(context) {
 
-      context.state.socket = io("https://e-garsonum.com");
+      context.state.socket = io("localhost:3000");
 
       if (context.state.socket.connected) return
 
@@ -40,16 +63,27 @@ export default new Vuex.Store({
         console.log(err)
       });
 
-      context.dispatch('joinRoom', data)
+      context.state.socket.on("user-connected", (userId) => {
+        context.commit('setNewPerson', userId)
+        console.log(userId);
+      });
+
+      context.state.socket.on("user-disconnected", (userId) => {
+        if (context.state.peers[userId]) context.commit('setClosePeerUser', userId)
+      });
+
     },
 
     joinRoom(context, data) {
-      context.state.socket.emit("join-room", { roomId: data.roomId, userId: data.userId });
+      setTimeout(() => {
+        
+        context.state.socket.emit("join-room", { roomId: data.roomId, userId: context.state.userId });
+      },2000)
     },
 
-    openPeer(context){
+    openPeer(context) {
       context.state.globalPeer.on("open", (userId) => {
-        context.state.userId = userId;
+        context.commit('setUserId', userId)
       });
     }
   },
