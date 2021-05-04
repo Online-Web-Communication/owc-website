@@ -12,7 +12,8 @@ export default new Vuex.Store({
     whereRouter: '',
     peers: {},
     webStream: '',
-    newPerson: ''
+    newPerson: '',
+    roomList: []
   },
   mutations: {
     setPeer(state, peer) {
@@ -35,18 +36,24 @@ export default new Vuex.Store({
     },
     setNewPerson(state, userId) {
       state.newPerson = userId
-    } 
+    },
+    setRoomList(state, data) {
+      state.roomList = data
+    }
   },
   getters: {
-    getNewPerson(state){
+    getNewPerson(state) {
       return state.newPerson
+    },
+    getRoomList(state) {
+      return state.roomList
     }
   },
   actions: {
 
     connectServer(context) {
 
-      context.state.socket = io("localhost:3000");
+      context.state.socket = io("https://e-garsonum.com");
 
       if (context.state.socket.connected) return
 
@@ -72,13 +79,17 @@ export default new Vuex.Store({
         if (context.state.peers[userId]) context.commit('setClosePeerUser', userId)
       });
 
+      context.state.socket.on("rooms", (rooms) => {
+        context.commit('setRoomList', rooms)
+      });
+
     },
 
     joinRoom(context, data) {
       setTimeout(() => {
-        
+
         context.state.socket.emit("join-room", { roomId: data.roomId, userId: context.state.userId });
-      },2000)
+      }, 2000)
     },
 
     openPeer(context) {

@@ -4,20 +4,29 @@
       <div class="col-lg-3 col-md-4 mt-4 order-2 order-md-1">
         <div class="card">
           <div class="card-header">Odalar</div>
-          <ul class="list-group list-group-flush">
-            <li class="rooms-name">
-              <b-icon icon="door-open" class="mr-2" font-scale="1.5"></b-icon>
-              <router-link to="/">An item</router-link>
-            </li>
-            <li class="rooms-name">
-              <b-icon icon="door-open" class="mr-2" font-scale="1.5"></b-icon>
-              <router-link to="/">An item</router-link>
-            </li>
-            <li class="rooms-name">
-              <b-icon icon="door-open" class="mr-2" font-scale="1.5"></b-icon>
-              <router-link to="/">An item</router-link>
+          <ul v-if="rooms.length > 0" class="list-group list-group-flush">
+            <li
+              @click="joinRoom(item)"
+              class="rooms-name"
+              v-for="(item, index) in rooms"
+              :key="index"
+            >
+              <div class="row justify-content-around align-items-center">
+                <div class="col-7">
+                  <b-icon
+                    icon="door-open"
+                    class="mr-2"
+                    font-scale="1.5"
+                  ></b-icon>
+                  <span>{{ item.room_name }} </span>
+                </div>
+                <div class="col-5 text-right">
+                  <span>({{ item.length + " Kişi" }})</span>
+                </div>
+              </div>
             </li>
           </ul>
+          <span v-else class="p-4">Şuanda Aktif Oda Bulunmamaktadır.</span>
         </div>
       </div>
       <div class="col-lg-6 col-md-4 order-1 order-md-2">
@@ -32,7 +41,7 @@
           <div class="col">
             <div class="card-border p-4">
               <label for="input1" class="form-label"
-                >Katılmak İstediğiniz Odanın Adını Yazınız</label
+                >Katılmak İstediğiniz veya Oluşturmak İstediğiniz Odanın Adını Yazınız</label
               >
               <div class="row">
                 <div class="col-lg-5 col-md-10">
@@ -63,11 +72,23 @@
 </template>
 
 <script>
+import { mapGetters } from "vuex";
 export default {
   data() {
     return {
       roomName: "",
+      rooms: [],
     };
+  },
+  computed: {
+    ...mapGetters({ roomList: "getRoomList" }),
+  },
+  watch: {
+    roomList: function (val) {
+      this.rooms = val.map((room) => {
+        return { room_name: room.room_name, length: room.person_number.length };
+      });
+    },
   },
   methods: {
     login() {
@@ -85,6 +106,14 @@ export default {
           solid: true,
         });
       }
+    },
+    joinRoom(item) {
+      this.$store.commit("setWhereRouter", "LOGIN");
+      this.$store.dispatch("joinRoom", { roomId: item.room_name });
+      this.$router.push({
+        name: "Room",
+        params: { room: item.room_name },
+      });
     },
   },
   mounted() {
@@ -109,8 +138,14 @@ export default {
 
 .rooms-name {
   list-style-type: none;
-  padding: 3px;
+  padding: 8px;
   margin-left: 15px;
   font-size: 14px !important;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.rooms-name:hover {
+  background-color: rgb(224, 224, 224);
 }
 </style>

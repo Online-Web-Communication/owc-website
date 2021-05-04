@@ -29,7 +29,6 @@ export default {
         video: true,
       },
       videoGrid: "",
-      peers: {},
       videoClass: "",
       clients: 0,
       otherClients: 0,
@@ -210,22 +209,7 @@ export default {
     this.videoGrid = document.getElementById("video-grid");
 
     this.createVideo();
-    /*setTimeout(() => {
-      this.$store.dispatch("connectServer", {
-        roomId: this.$route.params.room,
-        userId: this.$store.state.userId,
-      });
-    }, 1500);*/
-    /*setTimeout(() => {
-      this.$store.state.socket.on("user-connected", (userId) => {
-        this.connectToNewUser(userId, this.webStream);
-        console.log(userId);
-      });
-
-      this.$store.state.socket.on("user-disconnected", (userId) => {
-        if (this.peers[userId]) this.peers[userId].close();
-      });
-    }, 3000);*/
+    
   },
   created() {
     if (this.$store.state.whereRouter != "LOGIN") {
