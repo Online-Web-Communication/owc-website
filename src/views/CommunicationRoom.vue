@@ -7,6 +7,14 @@
       @click="backToLogin()"
       ><b-icon class="mr-2" icon="arrow-left-circle"></b-icon>Çıkış</b-button
     >
+    <b-button size="sm" variant="primary" @click="muteAndOpenAudio()"
+      ><b-icon class="mr-2" icon="arrow-left-circle"></b-icon
+      >{{ audioEnabled ? "Kamerayı Aç" : "Kamerayı Kapat" }}</b-button
+    >
+    <b-button size="sm" variant="primary" @click="closeAndOpenVideo()"
+      ><b-icon class="mr-2" icon="arrow-left-circle"></b-icon
+      >{{ videoEnabled ? "Kamerayı Aç" : "Kamerayı Kapat" }}</b-button
+    >
 
     <div id="video-grid" class="row"></div>
 
@@ -33,6 +41,8 @@ export default {
       clients: 0,
       otherClients: 0,
       allClassList: [],
+      audioEnabled: false,
+      videoEnabled: false,
     };
   },
   computed: {
@@ -40,7 +50,7 @@ export default {
   },
   watch: {
     getNewPerson: function (val) {
-      this.connectToNewUser(val)
+      this.connectToNewUser(val);
     },
     clients: function (val) {
       if (val === 1 || val === 2) {
@@ -80,6 +90,16 @@ export default {
   methods: {
     backToLogin() {
       window.location.href = "/";
+    },
+    muteAndOpenAudio() {
+      this.$store.state.webStream.getAudioTracks()[0].enabled = !this.$store.state.webStream.getAudioTracks()[0]
+        .enabled;
+      this.audioEnabled = !this.audioEnabled;
+    },
+    closeAndOpenVideo() {
+      this.$store.state.webStream.getVideoTracks()[0].enabled = !this.$store.state.webStream.getVideoTracks()[0]
+        .enabled;
+      this.videoEnabled = !this.videoEnabled;
     },
     connectToNewUser(userId) {
       const call = this.$store.state.globalPeer.call(
@@ -209,7 +229,6 @@ export default {
     this.videoGrid = document.getElementById("video-grid");
 
     this.createVideo();
-    
   },
   created() {
     if (this.$store.state.whereRouter != "LOGIN") {
