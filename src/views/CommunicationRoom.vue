@@ -1,21 +1,5 @@
 <template>
   <div class="container-fluid">
-    <b-button
-      class="back-button"
-      size="sm"
-      variant="primary"
-      @click="backToLogin()"
-      ><b-icon class="mr-2" icon="arrow-left-circle"></b-icon>Çıkış</b-button
-    >
-    <b-button size="sm" variant="primary" @click="muteAndOpenAudio()"
-      ><b-icon class="mr-2" icon="arrow-left-circle"></b-icon
-      >{{ audioEnabled ? "Kamerayı Aç" : "Kamerayı Kapat" }}</b-button
-    >
-    <b-button size="sm" variant="primary" @click="closeAndOpenVideo()"
-      ><b-icon class="mr-2" icon="arrow-left-circle"></b-icon
-      >{{ videoEnabled ? "Kamerayı Aç" : "Kamerayı Kapat" }}</b-button
-    >
-
     <div id="video-grid" class="row"></div>
 
     <video
@@ -23,6 +7,41 @@
       id="personalVideo"
       autoplay="autoplay"
     ></video>
+    <div class="user-controller">
+      <div class="contaier-fluid">
+        <div class="row mt-3">
+          <div class="col-md-12 d-flex justify-content-center">
+            <b-button
+              class="back-button"
+              style="border-radius: 20px"
+              variant="primary"
+              @click="backToLogin()"
+              ><b-icon class="mr-2" icon="arrow-left-circle"></b-icon
+              >Çıkış</b-button
+            >
+            <b-button
+              class="mr-3"
+              style="border-radius: 20px"
+              :variant="audioEnabled ? 'success' : 'danger'"
+              @click="muteAndOpenAudio()"
+              ><b-icon
+                :icon="audioEnabled ? 'volume-up' : 'volume-mute'"
+                font-scale="2"
+              ></b-icon
+            ></b-button>
+            <b-button
+              style="border-radius: 20px"
+              :variant="videoEnabled ? 'success' : 'danger'"
+              @click="closeAndOpenVideo()"
+              ><b-icon
+                :icon="videoEnabled ? 'camera-video' : 'camera-video-off'"
+                font-scale="2"
+              ></b-icon
+            ></b-button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -251,7 +270,6 @@ video {
 
 .back-button {
   position: fixed !important;
-  top: 10px !important;
   left: 10px !important;
   opacity: 0.5 !important;
   z-index: 1000 !important;
@@ -293,5 +311,14 @@ video {
     width: 300px !important;
     height: 225px !important;
   }
+}
+
+.user-controller {
+  position: fixed;
+  bottom: 0px;
+  left: 0px;
+  width: 100%;
+  height: 80px;
+  background-color: rgb(76, 76, 76);
 }
 </style>
