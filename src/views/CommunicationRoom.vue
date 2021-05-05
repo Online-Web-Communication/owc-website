@@ -1,46 +1,68 @@
 <template>
   <div class="container-fluid">
-    <div id="video-grid" class="row"></div>
-
-    <video
-      class="personalScreen"
-      id="personalVideo"
-      autoplay="autoplay"
-    ></video>
-    <div class="user-controller">
-      <div class="contaier-fluid">
-        <div class="row mt-3">
-          <div class="col-md-12 d-flex justify-content-center">
-            <b-button
-              class="back-button"
-              style="border-radius: 20px"
-              variant="primary"
-              @click="backToLogin()"
-              ><b-icon class="mr-2" icon="arrow-left-circle"></b-icon
-              >Çıkış</b-button
-            >
-            <b-button
-              class="mr-3"
-              style="border-radius: 20px"
-              :variant="audioEnabled ? 'success' : 'danger'"
-              @click="muteAndOpenAudio()"
-              ><b-icon
-                :icon="audioEnabled ? 'volume-up' : 'volume-mute'"
-                font-scale="2"
-              ></b-icon
-            ></b-button>
-            <b-button
-              style="border-radius: 20px"
-              :variant="videoEnabled ? 'success' : 'danger'"
-              @click="closeAndOpenVideo()"
-              ><b-icon
-                :icon="videoEnabled ? 'camera-video' : 'camera-video-off'"
-                font-scale="2"
-              ></b-icon
-            ></b-button>
+    <div
+      class="row d-flex"
+      style="height: 100%; flex: 1 1 auto; flex-direction: column"
+    >
+      <!-- Üst Bar -->
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col d-flex">
+            <div class="voice-button text-center">
+              <i class="fas fa-volume-up"></i>
+            </div>
+            <div class="voice-button-title">{{ $route.params.room }}</div>
           </div>
         </div>
       </div>
+      <!-- Üst Bar -->
+      <div id="video-grid" class="row"></div>
+
+      <video
+        class="personalScreen"
+        id="personalVideo"
+        autoplay="autoplay"
+      ></video>
+      <!-- Alt Bar -->
+      <div class="container-fluid alt-bar">
+        <div class="row">
+          <div class="col d-flex justify-content-center">
+            <div class="text-center butons mr-3">
+              <i
+                class="fab fa-slideshare"
+                style="font-size: 20px; color: white"
+              ></i>
+            </div>
+            <div class="text-center butons mr-3" @click="closeAndOpenVideo()">
+              <i
+                :class="videoEnabled ? 'fas fa-video-slash' : 'fas fa-video'"
+                style="font-size: 20px"
+                :style="videoEnabled ? 'color:black;' : 'color:white;'"
+              ></i>
+            </div>
+            <div class="text-center butons mr-3" @click="muteAndOpenAudio()">
+              <i
+                :class="
+                  audioEnabled ? 'fas fa-microphone-slash' : 'fas fa-microphone'
+                "
+                style="font-size: 20px"
+                :style="audioEnabled ? 'color:black;' : 'color:white;'"
+              ></i>
+            </div>
+            <div
+              class="text-center butons"
+              style="background-color: red"
+              @click="backToLogin()"
+            >
+              <i
+                class="fas fa-phone-slash"
+                style="font-size: 20px; color: white"
+              ></i>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Alt Bar -->
     </div>
   </div>
 </template>
@@ -298,10 +320,10 @@ video {
 @media only screen and (max-width: 728px) {
   .personalScreen {
     position: fixed !important;
-    bottom: 10px !important;
+    top: 10px !important;
     right: 10px !important;
-    width: 150px !important;
-    height: 200px !important;
+    width: 130px !important;
+    height: 175px !important;
     border-radius: 10px !important;
     z-index: 10 !important;
     transition: 0.5s;
@@ -313,12 +335,42 @@ video {
   }
 }
 
-.user-controller {
+.alt-bar {
+  /*background: gray;*/
+  bottom: 30px;
+  left: 0;
   position: fixed;
-  bottom: 0px;
-  left: 0px;
-  width: 100%;
-  height: 80px;
-  background-color: rgb(76, 76, 76);
+}
+
+.butons {
+  border-radius: 65px;
+  width: 65px;
+  line-height: 65px;
+  margin-top: -50px;
+  background-color: rgb(121, 121, 121);
+  transition: 0.2s;
+  cursor: pointer;
+}
+
+.butons:hover {
+  -webkit-box-shadow: 0px 0px 5px 5px rgb(147, 147, 147); /* Safari 3-4, iOS 4.0.2 - 4.2, Android 2.3+ */
+  -moz-box-shadow: 0px 0px 5px 5px rgb(147, 147, 147); /* Firefox 3.5 - 3.6 */
+  box-shadow: 0px 0px 5px 5px rgb(147, 147, 147);
+}
+
+.voice-button {
+  border-radius: 40px;
+  width: 40px;
+  line-height: 40px;
+  background-color: rgb(191, 191, 191);
+  transition: 0.2s;
+  margin-top: 15px;
+  margin-left: 15px;
+}
+
+.voice-button-title {
+  margin-top: 23px;
+  margin-left: 15px;
+  color: black;
 }
 </style>
