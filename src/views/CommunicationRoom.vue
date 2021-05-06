@@ -1,69 +1,63 @@
 <template>
-  <div class="container-fluid">
-    <div
-      class="row d-flex"
-      style="height: 100%; flex: 1 1 auto; flex-direction: column"
-    >
-      <!-- Üst Bar -->
-      <div class="container-fluid">
-        <div class="row">
-          <div class="col d-flex">
-            <div class="voice-button text-center">
-              <i class="fas fa-volume-up"></i>
-            </div>
-            <div class="voice-button-title">{{ $route.params.room }}</div>
-          </div>
+  <div class="container-fluid" style="height: 100vh; overflow-y: hidden">
+    <!-- Üst Bar -->
+    <div class="row">
+      <div class="col d-flex">
+        <div class="voice-button text-center">
+          <i class="fas fa-volume-up"></i>
         </div>
+        <div class="voice-button-title">{{ $route.params.room }}</div>
       </div>
-      <!-- Üst Bar -->
-      <div id="video-grid" class="row"></div>
-
-      <video
-        class="personalScreen"
-        id="personalVideo"
-        autoplay="autoplay"
-      ></video>
-      <!-- Alt Bar -->
-      <div class="container-fluid alt-bar">
-        <div class="row">
-          <div class="col d-flex justify-content-center">
-            <div class="text-center butons mr-3">
-              <i
-                class="fab fa-slideshare"
-                style="font-size: 20px; color: white"
-              ></i>
-            </div>
-            <div class="text-center butons mr-3" @click="closeAndOpenVideo()">
-              <i
-                :class="videoEnabled ? 'fas fa-video-slash' : 'fas fa-video'"
-                style="font-size: 20px"
-                :style="videoEnabled ? 'color:black;' : 'color:white;'"
-              ></i>
-            </div>
-            <div class="text-center butons mr-3" @click="muteAndOpenAudio()">
-              <i
-                :class="
-                  audioEnabled ? 'fas fa-microphone-slash' : 'fas fa-microphone'
-                "
-                style="font-size: 20px"
-                :style="audioEnabled ? 'color:black;' : 'color:white;'"
-              ></i>
-            </div>
-            <div
-              class="text-center butons"
-              style="background-color: red"
-              @click="backToLogin()"
-            >
-              <i
-                class="fas fa-phone-slash"
-                style="font-size: 20px; color: white"
-              ></i>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- Alt Bar -->
     </div>
+    <!-- Üst Bar -->
+
+    <div id="video-grid" class="row"></div>
+
+    <video
+      class="personalScreen"
+      id="personalVideo"
+      autoplay="autoplay"
+    ></video>
+    <!-- Alt Bar -->
+    <div class="container-fluid alt-bar">
+      <div class="row">
+        <div class="col d-flex justify-content-center">
+          <div class="text-center butons mr-3" @click="shareScreen()">
+            <i
+              class="fab fa-slideshare"
+              style="font-size: 20px; color: white"
+            ></i>
+          </div>
+          <div class="text-center butons mr-3" @click="closeAndOpenVideo()">
+            <i
+              :class="videoEnabled ? 'fas fa-video-slash' : 'fas fa-video'"
+              style="font-size: 20px"
+              :style="videoEnabled ? 'color:black;' : 'color:white;'"
+            ></i>
+          </div>
+          <div class="text-center butons mr-3" @click="muteAndOpenAudio()">
+            <i
+              :class="
+                audioEnabled ? 'fas fa-microphone-slash' : 'fas fa-microphone'
+              "
+              style="font-size: 20px"
+              :style="audioEnabled ? 'color:black;' : 'color:white;'"
+            ></i>
+          </div>
+          <div
+            class="text-center butons"
+            style="background-color: red"
+            @click="backToLogin()"
+          >
+            <i
+              class="fas fa-phone-slash"
+              style="font-size: 20px; color: white"
+            ></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Alt Bar -->
   </div>
 </template>
 
@@ -74,7 +68,7 @@ export default {
   data() {
     return {
       streamConstraints: {
-        audio: true,
+        audio: false,
         video: true,
       },
       videoGrid: "",
@@ -84,6 +78,9 @@ export default {
       allClassList: [],
       audioEnabled: false,
       videoEnabled: false,
+      videoWidthData: window.innerWidth,
+      videoHeightData: window.innerHeight,
+      calls: "",
     };
   },
   computed: {
@@ -129,6 +126,29 @@ export default {
     },
   },
   methods: {
+    shareScreen() {
+      navigator.mediaDevices
+        .getDisplayMedia({
+          video: {
+            cursor: "always",
+          },
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+          },
+        })
+        .then((stream) => {
+          const videoTrack = stream.getTracks()[0];
+          this.calls.getSenders()[0].replaceTrack(videoTrack);
+
+          /*videoTrack.onended = () => {
+            this.createVideo();
+          };*/
+          const myVideo = document.getElementById("personalVideo");
+          myVideo.muted = true;
+          this.addMyVideoStream(myVideo, stream);
+        });
+    },
     backToLogin() {
       window.location.href = "/";
     },
@@ -147,6 +167,7 @@ export default {
         userId,
         this.$store.state.webStream
       );
+      this.calls = call.peerConnection
       this.clients++;
       const div = document.createElement("div");
       const video = document.createElement("video");
@@ -180,15 +201,16 @@ export default {
     createVideo() {
       const myVideo = document.getElementById("personalVideo");
       myVideo.muted = true;
-
       navigator.mediaDevices
         .getUserMedia(this.streamConstraints)
         .then((stream) => {
           this.$store.commit("setWebStream", stream);
-          this.addMyVideoStream(myVideo, stream);
+
+          this.addMyVideoStream(myVideo, this.$store.state.webStream);
 
           this.$store.state.globalPeer.on("call", (call) => {
-            call.answer(stream);
+            call.answer(this.$store.state.webStream);
+            this.calls = call.peerConnection;
             const video = document.createElement("video");
             const div = document.createElement("div");
             this.otherClients++;
@@ -280,9 +302,13 @@ export default {
 </script>
 
 <style scoped>
+.video-border {
+  border: 2px solid red;
+  border-radius: 20px;
+}
+
 video {
-  width: 250px;
-  height: 250px;
+  width: 100%;
   object-fit: cover;
 }
 
@@ -333,6 +359,12 @@ video {
     width: 300px !important;
     height: 225px !important;
   }
+
+  #video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 150px);
+    grid-auto-rows: 150px;
+  }
 }
 
 .alt-bar {
@@ -365,7 +397,7 @@ video {
   background-color: rgb(191, 191, 191);
   transition: 0.2s;
   margin-top: 15px;
-  margin-left: 15px;
+  margin-left: 30px;
 }
 
 .voice-button-title {
