@@ -170,7 +170,8 @@ export default {
       return navigator.mediaDevices.getDisplayMedia(this.shareDesktop);
     },
     shareDesktopScreen() {
-      if (this.clients == 0) return;
+      if (!this.$store.state.calls.peerConnection) return;
+      
       this.desktopScreen().then((stream) => {
         this.stopStreamVideo();
 
