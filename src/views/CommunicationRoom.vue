@@ -22,7 +22,15 @@
     <div class="container-fluid alt-bar">
       <div class="row">
         <div class="col d-flex justify-content-center">
-          <div class="text-center butons mr-3" @click="shareScreen()">
+          <div
+            :style="
+              isShareDesktop
+                ? 'background-color: rgb(64, 208, 35)'
+                : 'background-color: rgb(121, 121, 121);'
+            "
+            class="text-center butons mr-3"
+            @click="isShareDesktop ? turnWebCam() : shareDesktopScreen()"
+          >
             <i
               class="fab fa-slideshare"
               style="font-size: 20px; color: white"
@@ -71,6 +79,15 @@ export default {
         audio: false,
         video: true,
       },
+      shareDesktop: {
+        video: {
+          cursor: "always",
+        },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+        },
+      },
       videoGrid: "",
       videoClass: "",
       clients: 0,
@@ -80,7 +97,7 @@ export default {
       videoEnabled: false,
       videoWidthData: window.innerWidth,
       videoHeightData: window.innerHeight,
-      calls: "",
+      isShareDesktop: false,
     };
   },
   computed: {
@@ -126,28 +143,49 @@ export default {
     },
   },
   methods: {
-    shareScreen() {
-      navigator.mediaDevices
-        .getDisplayMedia({
-          video: {
-            cursor: "always",
-          },
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-          },
-        })
-        .then((stream) => {
-          const videoTrack = stream.getTracks()[0];
-          this.calls.getSenders()[0].replaceTrack(videoTrack);
+    turnWebCam() {
+      this.shareWebCam().then((stream) => {
+        this.stopStreamVideo();
+        this.$store.commit("setWebStream", stream);
 
-          /*videoTrack.onended = () => {
+        this.updateVideoTrack();
+
+        this.isShareDesktop = false;
+
+        this.updateMyVideoStream();
+      });
+    },
+    updateVideoTrack() {
+      const videoTrack = this.$store.state.webStream.getTracks()[0];
+      this.$store.state.calls.peerConnection
+        .getSenders()[0]
+        .replaceTrack(videoTrack);
+    },
+    stopStreamVideo() {
+      this.$store.state.webStream.getTracks().forEach((track) => {
+        track.stop();
+      });
+    },
+    desktopScreen() {
+      return navigator.mediaDevices.getDisplayMedia(this.shareDesktop);
+    },
+    shareDesktopScreen() {
+      if (this.clients == 0) return;
+      this.desktopScreen().then((stream) => {
+        this.stopStreamVideo();
+
+        this.$store.commit("setWebStream", stream);
+
+        this.updateVideoTrack();
+
+        this.isShareDesktop = true;
+
+        this.updateMyVideoStream();
+
+        /*videoTrack.onended = () => {
             this.createVideo();
           };*/
-          const myVideo = document.getElementById("personalVideo");
-          myVideo.muted = true;
-          this.addMyVideoStream(myVideo, stream);
-        });
+      });
     },
     backToLogin() {
       window.location.href = "/";
@@ -162,100 +200,115 @@ export default {
         .enabled;
       this.videoEnabled = !this.videoEnabled;
     },
-    connectToNewUser(userId) {
-      const call = this.$store.state.globalPeer.call(
+    async connectToNewUser(userId) {
+      const call = await this.$store.state.globalPeer.call(
         userId,
         this.$store.state.webStream
       );
-      this.calls = call.peerConnection
+
+      this.$store.commit("setCall", call);
+
       this.clients++;
-      const div = document.createElement("div");
-      const video = document.createElement("video");
-      video.classList.add("video-design-options");
-      div.classList.add("col");
-      this.screenDesigner(video);
+
+      const data = await this.screenDesigner();
+
       call.on("stream", (userVideoStream) => {
-        this.addVideoStream(video, userVideoStream, div);
+        this.addVideoStream(data.video, userVideoStream, data.div);
       });
+
       call.on("close", () => {
         this.clients--;
-        div.remove();
+        data.div.remove();
       });
 
       this.$store.commit("setPeersUser", { call: call, userId: userId });
     },
     addVideoStream(video, stream, div) {
       video.srcObject = stream;
+
       video.addEventListener("loadedmetadata", () => {
         video.play();
       });
+
       this.videoGrid.append(div);
       div.append(video);
     },
-    addMyVideoStream(video, stream) {
-      video.srcObject = stream;
-      video.addEventListener("loadedmetadata", () => {
-        video.play();
-      });
-    },
-    createVideo() {
+    updateMyVideoStream() {
       const myVideo = document.getElementById("personalVideo");
       myVideo.muted = true;
-      navigator.mediaDevices
-        .getUserMedia(this.streamConstraints)
-        .then((stream) => {
-          this.$store.commit("setWebStream", stream);
+      myVideo.srcObject = this.$store.state.webStream;
 
-          this.addMyVideoStream(myVideo, this.$store.state.webStream);
-
-          this.$store.state.globalPeer.on("call", (call) => {
-            call.answer(this.$store.state.webStream);
-            this.calls = call.peerConnection;
-            const video = document.createElement("video");
-            const div = document.createElement("div");
-            this.otherClients++;
-            video.classList.add("video-design-options");
-            div.classList.add("col");
-            if (this.otherClients === 1) {
-              for (let i = 0; i < this.videoGrid.classList.length; i++) {
-                this.videoGrid.classList.remove(
-                  this.videoGrid.classList[i].toString()
-                );
-              }
-              video.style.width = "100%";
-              video.style.height = "98vh";
-            } else if (this.otherClients === 2) {
-              for (let i = 0; i < this.videoGrid.classList.length; i++) {
-                this.videoGrid.classList.remove(
-                  this.videoGrid.classList[i].toString()
-                );
-              }
-              video.style.width = "100%";
-              video.style.height = "98vh";
-            } else {
-              for (let i = 0; i < this.videoGrid.classList.length; i++) {
-                this.videoGrid.classList.remove(
-                  this.videoGrid.classList[i].toString()
-                );
-              }
-              video.style.width = "100%";
-              video.style.height = "47vh";
-              var elements = document.getElementsByClassName(
-                "video-design-options"
-              );
-              for (var i = 0, len = elements.length; i < len; i++) {
-                elements[i].style.width = "100%";
-                elements[i].style.height = "47vh";
-              }
-            }
-
-            call.on("stream", (userVideoStream) => {
-              this.addVideoStream(video, userVideoStream, div);
-            });
-          });
-        });
+      myVideo.addEventListener("loadedmetadata", () => {
+        myVideo.play();
+      });
     },
-    screenDesigner(video) {
+    shareWebCam() {
+      return navigator.mediaDevices.getUserMedia(this.streamConstraints);
+    },
+    createVideo() {
+      this.shareWebCam().then((stream) => {
+        this.$store.commit("setWebStream", stream);
+
+        this.updateMyVideoStream();
+
+        this.peerCall();
+      });
+    },
+    peerCall() {
+      this.$store.state.globalPeer.on("call", async (call) => {
+        this.$store.commit("setCall", call);
+        call.answer(this.$store.state.webStream);
+        const data = await this.firstPersonScreenDesings();
+
+        call.on("stream", (userVideoStream) => {
+          this.addVideoStream(data.video, userVideoStream, data.div);
+        });
+      });
+    },
+    firstPersonScreenDesings() {
+      const video = document.createElement("video");
+      const div = document.createElement("div");
+      this.otherClients++;
+      video.classList.add("video-design-options");
+      div.classList.add("col");
+      if (this.otherClients === 1) {
+        for (let i = 0; i < this.videoGrid.classList.length; i++) {
+          this.videoGrid.classList.remove(
+            this.videoGrid.classList[i].toString()
+          );
+        }
+        video.style.width = "100%";
+        video.style.height = "98vh";
+      } else if (this.otherClients === 2) {
+        for (let i = 0; i < this.videoGrid.classList.length; i++) {
+          this.videoGrid.classList.remove(
+            this.videoGrid.classList[i].toString()
+          );
+        }
+        video.style.width = "100%";
+        video.style.height = "98vh";
+      } else {
+        for (let i = 0; i < this.videoGrid.classList.length; i++) {
+          this.videoGrid.classList.remove(
+            this.videoGrid.classList[i].toString()
+          );
+        }
+        video.style.width = "100%";
+        video.style.height = "47vh";
+        var elements = document.getElementsByClassName("video-design-options");
+        for (var i = 0, len = elements.length; i < len; i++) {
+          elements[i].style.width = "100%";
+          elements[i].style.height = "47vh";
+        }
+      }
+      return { video, div };
+    },
+    screenDesigner() {
+      const div = document.createElement("div");
+      const video = document.createElement("video");
+      video.classList.add("video-design-options");
+      div.classList.add("col");
+
       if (this.clients === 1) {
         for (let i = 0; i < this.videoGrid.classList.length; i++) {
           this.videoGrid.classList.remove(
@@ -286,6 +339,7 @@ export default {
           elements[i].style.height = "47vh";
         }
       }
+      return { video, div };
     },
   },
   mounted() {

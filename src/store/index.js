@@ -13,7 +13,8 @@ export default new Vuex.Store({
     peers: {},
     webStream: '',
     newPerson: '',
-    roomList: []
+    roomList: [],
+    calls: ''
   },
   mutations: {
     setPeer(state, peer) {
@@ -39,6 +40,9 @@ export default new Vuex.Store({
     },
     setRoomList(state, data) {
       state.roomList = data
+    },
+    setCall(state, peerConnection) {
+      state.calls = peerConnection
     }
   },
   getters: {
