@@ -156,7 +156,16 @@ export default {
       });
     },
     updateVideoTrack() {
-      const videoTrack = this.$store.state.webStream.getTracks()[0];
+      const videoTrack = this.$store.state.webStream
+        .getTracks()
+        .find((track) => track.kind == "video");
+     /* const audioTrack = this.$store.state.webStream
+        .getTracks()
+        .find((track) => track.kind == "audio");
+
+      this.$store.state.calls.peerConnection
+        .getSenders()[1]
+        .replaceTrack(videoTrack);*/
       this.$store.state.calls.peerConnection
         .getSenders()[0]
         .replaceTrack(videoTrack);
@@ -171,7 +180,7 @@ export default {
     },
     shareDesktopScreen() {
       if (!this.$store.state.calls.peerConnection) return;
-      
+
       this.desktopScreen().then((stream) => {
         this.stopStreamVideo();
 
