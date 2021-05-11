@@ -14,7 +14,8 @@ export default new Vuex.Store({
     webStream: '',
     newPerson: '',
     roomList: [],
-    calls: ''
+    calls: '',
+    mySocketInformation: ''
   },
   mutations: {
     setPeer(state, peer) {
