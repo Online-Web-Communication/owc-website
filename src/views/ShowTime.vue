@@ -6,7 +6,9 @@
         <div class="voice-button text-center">
           <i class="fas fa-volume-up"></i>
         </div>
-        <div class="voice-button-title">{{ $route.params.room }}</div>
+        <div class="voice-button-title">
+          {{ $route.params.room }}
+        </div>
       </div>
     </div>
     <!-- Üst Bar -->
@@ -95,11 +97,6 @@ export default {
           noiseSuppression: true,
         },
       },
-      videoGrid: "",
-      videoClass: "",
-      clients: 0,
-      otherClients: 0,
-      allClassList: [],
       audioEnabled: false,
       videoEnabled: false,
       videoWidthData: window.innerWidth,
@@ -110,12 +107,10 @@ export default {
         video: true,
       },
       roomNumber: "room",
-      videolar: false,
       localStream: "",
       rtcPeerConnection: [],
       localVideo: "",
       number: 0,
-      clients: [],
       bandwidth: {
         screen: 300, // 300kbits minimum
         audio: 50, // 50kbits  minimum
@@ -124,13 +119,108 @@ export default {
     };
   },
   methods: {
+    backToLogin() {
+      window.location.href = "/";
+    },
+    stopStreamVideo() {
+      this.localStream.getTracks().forEach((track) => {
+        track.stop();
+      });
+    },
+    muteAndOpenAudio() {
+      this.localStream.getAudioTracks()[0].enabled = !this.localStream.getAudioTracks()[0]
+        .enabled;
+      this.audioEnabled = !this.audioEnabled;
+    },
+    closeAndOpenVideo() {
+      this.localStream.getVideoTracks()[0].enabled = !this.localStream.getVideoTracks()[0]
+        .enabled;
+      this.videoEnabled = !this.videoEnabled;
+    },
+    shareWebCam() {
+      return navigator.mediaDevices.getUserMedia(this.streamConstraints);
+    },
+    desktopScreen() {
+      return navigator.mediaDevices.getDisplayMedia(this.shareDesktop);
+    },
+    changeStreamTracks() {
+      const tracks = this.localStream.getTracks();
+
+      const videoTrack = tracks.find((item) => item.kind == "video");
+      const audioTrack = tracks.find((item) => item.kind == "audio");
+
+      this.rtcPeerConnection.forEach((item) => {
+        const videoTrackIndex = item
+          .getSenders()
+          .findIndex((item) => item.track.kind == "video");
+
+        const audioTrackIndex = item
+          .getSenders()
+          .findIndex((item) => item.track.kind == "audio");
+
+        if (videoTrackIndex != -1 && videoTrack) {
+          console.log(videoTrackIndex, "video");
+          item.getSenders()[videoTrackIndex].replaceTrack(videoTrack);
+        }
+
+        if (audioTrackIndex != -1 && audioTrack) {
+          console.log(audioTrackIndex, "audio");
+          item.getSenders()[audioTrackIndex].replaceTrack(audioTrack);
+        }
+      });
+    },
+    turnWebCam() {
+      return this.shareWebCam()
+        .then((stream) => {
+          this.localStream = stream;
+          this.localVideo.srcObject = stream;
+
+          //this.stopStreamVideo()
+
+          this.changeStreamTracks();
+
+          this.isShareDesktop = false;
+        })
+        .catch((err) => {
+          console.log("goromm error", err);
+        });
+    },
+    shareDesktopScreen() {
+      return this.desktopScreen()
+        .then((stream) => {
+          this.localStream = stream;
+          this.localVideo.srcObject = stream;
+
+          //this.stopStreamVideo()
+
+          this.changeStreamTracks();
+
+          this.isShareDesktop = true;
+        })
+        .catch((err) => {
+          console.log("goromm error", err);
+        });
+    },
+    createMyVideo() {
+      return this.shareWebCam()
+        .then((stream) => {
+          this.localStream = stream;
+          this.localVideo.srcObject = stream;
+        })
+        .catch((err) => {
+          console.log("goromm error", err);
+        });
+    },
     onAddStream(event) {
       let video = document.createElement("video");
       video.srcObject = event.streams[0];
       video.id = `remoteVideo${this.number}`;
-      video.autoplay = "autoplay";
-      document.getElementById("video-grid").appendChild(video);
-      this.number++;
+      //video.autoplay = "autoplay";
+      video.addEventListener("loadedmetadata", () => {
+        video.play();
+        document.getElementById("video-grid").appendChild(video);
+        this.number++;
+      });
     },
     onIceCandidate(event) {
       if (event.candidate) {
@@ -222,7 +312,6 @@ export default {
         this.localStream
       );
       //  this.rtcPeerConnection[index].addTrack(this.localStream.getTracks()[1], this.localStream)
-      console.log(socketInfo.sdp);
       this.rtcPeerConnection[
         this.rtcPeerConnection.length - 1
       ].setRemoteDescription(new RTCSessionDescription(socketInfo.sdp));
@@ -273,17 +362,6 @@ export default {
       this.rtcPeerConnection[this.rtcPeerConnection.length - 1].addIceCandidate(
         candidate
       );
-    },
-    createMyVideo() {
-      return navigator.mediaDevices
-        .getUserMedia(this.streamConstraints)
-        .then((stream) => {
-          this.localStream = stream;
-          this.localVideo.srcObject = stream;
-        })
-        .catch((err) => {
-          console.log("goromm error", err);
-        });
     },
   },
   mounted() {

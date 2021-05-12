@@ -82,7 +82,10 @@ export default {
     };
   },
   computed: {
-    ...mapGetters({ roomList: "getRoomList" }),
+    ...mapGetters({
+      roomList: "getRoomList",
+      mySocketInformation: "getMySocketInformation",
+    }),
   },
   watch: {
     roomList: function (val) {
@@ -90,21 +93,19 @@ export default {
         return { room_name: room.room_name, length: room.person_number.length };
       });
     },
+    mySocketInformation: function (val) {
+      console.log(val);
+      this.$router.push({
+        name: "Room",
+        params: { room: this.roomName },
+      });
+    },
   },
   methods: {
     login() {
       if (this.roomName !== "") {
-        this.$store.state.socket.emit("create or join", this.roomName);
         this.$store.commit("setWhereRouter", "LOGIN");
-        //this.$store.dispatch("joinRoom", { roomId: this.roomName });
-        this.$store.state.socket.on("mySocket", (socketInfo) => {
-          console.log(socketInfo);
-          this.$store.state.mySocketInformation = socketInfo;
-          this.$router.push({
-            name: "Room",
-            params: { room: this.roomName },
-          });
-        });
+        this.$store.state.socket.emit("create or join", this.roomName);
       } else {
         this.$bvToast.toast("Oda İsmi Yazınız !", {
           title: "Giriş Yapılamadı !",
@@ -114,20 +115,13 @@ export default {
       }
     },
     joinRoom(item) {
-      this.$store.state.socket.emit("create or join", item.room_name);
+      this.roomName = item.room_name;
       this.$store.commit("setWhereRouter", "LOGIN");
-      //this.$store.dispatch("joinRoom", { roomId: item.room_name });
-      this.$router.push({
-        name: "Room",
-        params: { room: item.room_name },
-      });
+      this.$store.state.socket.emit("create or join", item.room_name);
     },
   },
-  mounted() {
-    //this.$store.dispatch("openPeer");
-  },
+  mounted() {},
   created() {
-    //this.$store.commit("setPeer", this.$peer);
     this.$store.dispatch("connectServer");
   },
 };
