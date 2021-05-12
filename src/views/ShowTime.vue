@@ -13,7 +13,14 @@
     </div>
     <!-- Üst Bar -->
 
-    <div id="video-grid" class="row"></div>
+    <div
+      id="video-grid"
+      style="
+        display: grid;
+        grid-template-columns: repeat(auto-fill, 400px);
+        grid-auto-rows: 400px;
+      "
+    ></div>
 
     <video
       class="personalScreen"
@@ -215,6 +222,7 @@ export default {
       let video = document.createElement("video");
       video.srcObject = event.streams[0];
       video.id = `remoteVideo${this.number}`;
+      video.style = "width: 100%; height: 100%; object-fit: fill;";
       //video.autoplay = "autoplay";
       video.addEventListener("loadedmetadata", () => {
         video.play();
