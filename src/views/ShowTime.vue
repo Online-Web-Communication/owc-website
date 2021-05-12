@@ -172,10 +172,10 @@ export default {
     turnWebCam() {
       return this.shareWebCam()
         .then((stream) => {
+          this.stopStreamVideo();
+
           this.localStream = stream;
           this.localVideo.srcObject = stream;
-
-          //this.stopStreamVideo()
 
           this.changeStreamTracks();
 
@@ -188,10 +188,10 @@ export default {
     shareDesktopScreen() {
       return this.desktopScreen()
         .then((stream) => {
+          this.stopStreamVideo();
+
           this.localStream = stream;
           this.localVideo.srcObject = stream;
-
-          //this.stopStreamVideo()
 
           this.changeStreamTracks();
 
