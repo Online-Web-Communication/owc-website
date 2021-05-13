@@ -110,7 +110,7 @@ export default {
       videoHeightData: window.innerHeight,
       isShareDesktop: false,
       streamConstraints: {
-        audio: false,
+        audio: true,
         video: true,
       },
       localStream: "",
@@ -156,7 +156,7 @@ export default {
             solid: true,
           }
         );
-        return;
+        return Promise.reject();
       }
       return navigator.mediaDevices.getDisplayMedia(this.shareDesktop);
     },
@@ -262,21 +262,25 @@ export default {
         }
       };
       this.rtcPeerConnection[index].ontrack = (event) => {
-        let video = document.createElement("video");
-        video.srcObject = event.streams[0];
-        video.id = `${socketInfo.uuid}`;
-        video.style = "width: 100%; height: 100%; object-fit: fill;";
-        video.addEventListener("loadedmetadata", () => {
-          video.play();
-          document.getElementById("video-grid").appendChild(video);
-        });
+        let userVideo = document.getElementById(socketInfo.uuid);
+
+        if (!userVideo) {
+          let video = document.createElement("video");
+          video.srcObject = event.streams[0];
+          video.id = `${socketInfo.uuid}`;
+          video.style = "width: 100%; height: 100%; object-fit: fill;";
+          video.addEventListener("loadedmetadata", () => {
+            video.play();
+            document.getElementById("video-grid").appendChild(video);
+          });
+        }
       };
 
       this.rtcPeerConnection[index].addTrack(videoTrack, this.localStream);
 
-      if (audioTrack) {
+      /* if (audioTrack) {
         this.rtcPeerConnection[index].addTrack(audioTrack, this.localStream);
-      }
+      }*/
 
       this.rtcPeerConnection[index]
         .createOffer()
@@ -337,14 +341,18 @@ export default {
       this.rtcPeerConnection[this.rtcPeerConnection.length - 1].ontrack = (
         event
       ) => {
-        let video = document.createElement("video");
-        video.srcObject = event.streams[0];
-        video.id = `${socketInfo.uuid}`;
-        video.style = "width: 100%; height: 100%; object-fit: fill;";
-        video.addEventListener("loadedmetadata", () => {
-          video.play();
-          document.getElementById("video-grid").appendChild(video);
-        });
+        let userVideo = document.getElementById(socketInfo.uuid);
+
+        if (!userVideo) {
+          let video = document.createElement("video");
+          video.srcObject = event.streams[0];
+          video.id = `${socketInfo.uuid}`;
+          video.style = "width: 100%; height: 100%; object-fit: fill;";
+          video.addEventListener("loadedmetadata", () => {
+            video.play();
+            document.getElementById("video-grid").appendChild(video);
+          });
+        }
       };
 
       this.rtcPeerConnection[this.rtcPeerConnection.length - 1].addTrack(
@@ -352,12 +360,12 @@ export default {
         this.localStream
       );
 
-      if (audioTrack) {
+      /* if (audioTrack) {
         this.rtcPeerConnection[this.rtcPeerConnection.length - 1].addTrack(
           audioTrack,
           this.localStream
         );
-      }
+      }*/
 
       this.rtcPeerConnection[
         this.rtcPeerConnection.length - 1
@@ -408,9 +416,15 @@ export default {
       });
       this.rtcPeerConnection[index].addIceCandidate(candidate);
     },
-    deleteUserVideo(uuid) {
-      let videoElement = document.getElementById(uuid);
+    deleteUserVideo(data) {
+      let videoElement = document.getElementById(data.uuid);
       videoElement.remove();
+      const userIndex = this.rtcPeerConnection.findIndex(
+        (item) => item.socket_id == data.socket_id
+      );
+      if (userIndex != -1) {
+        this.rtcPeerConnection.splice(userIndex, 1);
+      }
     },
   },
   mounted() {
