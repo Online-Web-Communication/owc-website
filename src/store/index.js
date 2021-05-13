@@ -61,14 +61,14 @@ export default new Vuex.Store({
 
     connectServer(context) {
 
-      context.state.socket = io("localhost:3000");
+      context.state.socket = io("https://e-garsonum.com");
 
       if (context.state.socket.connected) return
 
       context.state.socket.on("connect", function () {
         console.log("bağlandı");
       });
-      
+
       context.state.socket.on('event', function (data) {
         console.log(data)
       });

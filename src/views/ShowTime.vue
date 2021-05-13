@@ -148,6 +148,17 @@ export default {
       return navigator.mediaDevices.getUserMedia(this.streamConstraints);
     },
     desktopScreen() {
+      if (this.rtcPeerConnection.length == 0) {
+        this.$bvToast.toast(
+          "Öncelikle Bir Kullanıcının Bağlanmasını Bekleyiniz.",
+          {
+            title: "Uyarı",
+            variant: "warning",
+            solid: true,
+          }
+        );
+        return;
+      }
       return navigator.mediaDevices.getDisplayMedia(this.shareDesktop);
     },
     changeStreamTracks() {
