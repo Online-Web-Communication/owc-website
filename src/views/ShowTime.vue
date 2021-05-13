@@ -113,7 +113,6 @@ export default {
         audio: false,
         video: true,
       },
-      roomNumber: "room",
       localStream: "",
       rtcPeerConnection: [],
       localVideo: "",
@@ -241,18 +240,6 @@ export default {
         this.number++;
       });
     },
-    onIceCandidate(event) {
-      if (event.candidate) {
-        //console.log("sending ice candidate", event.candidate);
-        this.$store.state.socket.emit("candidate", {
-          type: "candidate",
-          label: event.candidate.sdpMLineIndex,
-          id: event.candidate.sdpMid,
-          candidate: event.candidate.candidate,
-          room: this.roomNumber,
-        });
-      }
-    },
     createOfferPeers(socketInfo, index) {
       const tracks = this.localStream.getTracks();
 
@@ -270,11 +257,20 @@ export default {
             id: event.candidate.sdpMid,
             candidate: event.candidate.candidate,
             socket_id: socketInfo.your,
-            your: socketInfo.my
+            your: socketInfo.my,
           });
         }
       };
-      this.rtcPeerConnection[index].ontrack = this.onAddStream;
+      this.rtcPeerConnection[index].ontrack = (event) => {
+        let video = document.createElement("video");
+        video.srcObject = event.streams[0];
+        video.id = `${socketInfo.uuid}`;
+        video.style = "width: 100%; height: 100%; object-fit: fill;";
+        video.addEventListener("loadedmetadata", () => {
+          video.play();
+          document.getElementById("video-grid").appendChild(video);
+        });
+      };
 
       this.rtcPeerConnection[index].addTrack(videoTrack, this.localStream);
 
@@ -306,6 +302,7 @@ export default {
             my: this.$store.state.mySocketInformation.socket_id,
             your: socketInfo.your,
             sdp: sessionDescription,
+            uuid: this.$store.state.mySocketInformation.uuid,
           });
         })
         .catch((err) => {
@@ -333,13 +330,22 @@ export default {
             id: event.candidate.sdpMid,
             candidate: event.candidate.candidate,
             socket_id: socketInfo.my,
-            your: socketInfo.your
+            your: socketInfo.your,
           });
         }
       };
-      this.rtcPeerConnection[
-        this.rtcPeerConnection.length - 1
-      ].ontrack = this.onAddStream;
+      this.rtcPeerConnection[this.rtcPeerConnection.length - 1].ontrack = (
+        event
+      ) => {
+        let video = document.createElement("video");
+        video.srcObject = event.streams[0];
+        video.id = `${socketInfo.uuid}`;
+        video.style = "width: 100%; height: 100%; object-fit: fill;";
+        video.addEventListener("loadedmetadata", () => {
+          video.play();
+          document.getElementById("video-grid").appendChild(video);
+        });
+      };
 
       this.rtcPeerConnection[this.rtcPeerConnection.length - 1].addTrack(
         videoTrack,
@@ -400,9 +406,11 @@ export default {
         sdpMLineIndex: event.label,
         candidate: event.candidate,
       });
-      this.rtcPeerConnection[index].addIceCandidate(
-        candidate
-      );
+      this.rtcPeerConnection[index].addIceCandidate(candidate);
+    },
+    deleteUserVideo(uuid) {
+      let videoElement = document.getElementById(uuid);
+      videoElement.remove();
     },
   },
   mounted() {
@@ -413,6 +421,7 @@ export default {
           let info = {
             my: this.$store.state.mySocketInformation.socket_id,
             your: item.socket_id,
+            uuid: item.uuid,
           };
 
           this.createOfferPeers(info, index);
@@ -428,12 +437,19 @@ export default {
     });
 
     this.$store.state.socket.on("candidate", (event) => {
-      const index = this.rtcPeerConnection.findIndex(item => item.socket_id == event.your)
-      console.log(index)
+      const index = this.rtcPeerConnection.findIndex(
+        (item) => item.socket_id == event.your
+      );
+      //console.log(index)
       this.setCandidate(event, index);
     });
+
     this.$store.state.socket.on("joined", (socketInfo) => {
       this.createAnswer(socketInfo);
+    });
+
+    this.$store.state.socket.on("user-disconnected", (uuid) => {
+      this.deleteUserVideo(uuid);
     });
   },
   created() {
