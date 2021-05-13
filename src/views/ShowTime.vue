@@ -177,12 +177,12 @@ export default {
           .findIndex((item) => item.track.kind == "audio");
 
         if (videoTrackIndex != -1 && videoTrack) {
-          console.log(videoTrackIndex, "video");
+          // console.log(videoTrackIndex, "video");
           item.getSenders()[videoTrackIndex].replaceTrack(videoTrack);
         }
 
         if (audioTrackIndex != -1 && audioTrack) {
-          console.log(audioTrackIndex, "audio");
+          // console.log(audioTrackIndex, "audio");
           item.getSenders()[audioTrackIndex].replaceTrack(audioTrack);
         }
       });
@@ -243,7 +243,7 @@ export default {
     },
     onIceCandidate(event) {
       if (event.candidate) {
-        console.log("sending ice candidate", event.candidate);
+        //console.log("sending ice candidate", event.candidate);
         this.$store.state.socket.emit("candidate", {
           type: "candidate",
           label: event.candidate.sdpMLineIndex,
@@ -254,6 +254,11 @@ export default {
       }
     },
     createOfferPeers(socketInfo, index) {
+      const tracks = this.localStream.getTracks();
+
+      const videoTrack = tracks.find((item) => item.kind == "video");
+      const audioTrack = tracks.find((item) => item.kind == "audio");
+
       this.rtcPeerConnection.push(new RTCPeerConnection(this.iceServers));
       this.rtcPeerConnection[index].socket_id = socketInfo.your;
       this.rtcPeerConnection[index].onicecandidate = (event) => {
@@ -265,15 +270,18 @@ export default {
             id: event.candidate.sdpMid,
             candidate: event.candidate.candidate,
             socket_id: socketInfo.your,
+            socket_id_your: socketInfo.my
           });
         }
       };
       this.rtcPeerConnection[index].ontrack = this.onAddStream;
-      this.rtcPeerConnection[index].addTrack(
-        this.localStream.getTracks()[0],
-        this.localStream
-      );
-      //  this.rtcPeerConnection[this.rtcPeerConnection.length - 1].addTrack(this.localStream.getTracks()[1], this.localStream)
+
+      this.rtcPeerConnection[index].addTrack(videoTrack, this.localStream);
+
+      if (audioTrack) {
+        this.rtcPeerConnection[index].addTrack(audioTrack, this.localStream);
+      }
+
       this.rtcPeerConnection[index]
         .createOffer()
         .then((sessionDescription) => {
@@ -305,7 +313,12 @@ export default {
         });
     },
     createAnswer(socketInfo) {
-      console.log(socketInfo);
+      const tracks = this.localStream.getTracks();
+
+      const videoTrack = tracks.find((item) => item.kind == "video");
+      const audioTrack = tracks.find((item) => item.kind == "audio");
+
+      //console.log(socketInfo);
       this.rtcPeerConnection.push(new RTCPeerConnection(this.iceServers));
       this.rtcPeerConnection[this.rtcPeerConnection.length - 1].socket_id =
         socketInfo.my;
@@ -320,17 +333,26 @@ export default {
             id: event.candidate.sdpMid,
             candidate: event.candidate.candidate,
             socket_id: socketInfo.my,
+            socket_id_your: socketInfo.your
           });
         }
       };
       this.rtcPeerConnection[
         this.rtcPeerConnection.length - 1
       ].ontrack = this.onAddStream;
+
       this.rtcPeerConnection[this.rtcPeerConnection.length - 1].addTrack(
-        this.localStream.getTracks()[0],
+        videoTrack,
         this.localStream
       );
-      //  this.rtcPeerConnection[index].addTrack(this.localStream.getTracks()[1], this.localStream)
+
+      if (audioTrack) {
+        this.rtcPeerConnection[this.rtcPeerConnection.length - 1].addTrack(
+          audioTrack,
+          this.localStream
+        );
+      }
+
       this.rtcPeerConnection[
         this.rtcPeerConnection.length - 1
       ].setRemoteDescription(new RTCSessionDescription(socketInfo.sdp));
@@ -372,13 +394,13 @@ export default {
         new RTCSessionDescription(event.sdp)
       );
     },
-    setCandidate(event) {
+    setCandidate(event, index) {
       //console.log('received ice candidate', event)
       var candidate = new RTCIceCandidate({
         sdpMLineIndex: event.label,
         candidate: event.candidate,
       });
-      this.rtcPeerConnection[this.rtcPeerConnection.length - 1].addIceCandidate(
+      this.rtcPeerConnection[index].addIceCandidate(
         candidate
       );
     },
@@ -406,7 +428,10 @@ export default {
     });
 
     this.$store.state.socket.on("candidate", (event) => {
-      this.setCandidate(event);
+       const peerIndex = this.rtcPeerConnection.findIndex(
+        (item) => item.socket_id == event.socket_id_your
+      );
+      this.setCandidate(event, peerIndex);
     });
     this.$store.state.socket.on("joined", (socketInfo) => {
       this.createAnswer(socketInfo);

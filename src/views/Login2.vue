@@ -94,7 +94,6 @@ export default {
       });
     },
     mySocketInformation: function (val) {
-      console.log(val);
       this.$router.push({
         name: "Room",
         params: { room: this.roomName },
