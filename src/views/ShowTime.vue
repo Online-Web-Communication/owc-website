@@ -7,7 +7,7 @@
           <i class="fas fa-volume-up"></i>
         </div>
         <div class="voice-button-title">
-          {{ $route.params.room }}
+          {{ $route.params.room }} {{ instantMeter }}
         </div>
       </div>
     </div>
@@ -79,14 +79,13 @@
 </template>
 
 <script>
-import { mapGetters } from "vuex";
+import SoundMeter from "../SoundController/sound";
 import BandwidthHandler from "../BandwidthHandler/BandwidthHandler";
 
 export default {
   data() {
     return {
       iceServers: {
-        //'iceServer': [{ 'urls': 'stun:stun.services.mozilla.com' }, { 'urls': 'stun:stun.l.google.com:19302' }]
         iceServers: [
           {
             urls: "stun:18.195.35.248:3478",
@@ -122,7 +121,21 @@ export default {
         audio: 50, // 50kbits  minimum
         video: 256, // 256kbits (both min-max)
       },
+      videoAddedCounter: [],
+      soundMeter: 0,
+      instantMeter: 0,
+      audioContext: "",
+      meterRefresh: "",
     };
+  },
+  watch: {
+    instantMeter: function (val) {
+      /*if (parseFloat(val) < 0.1) {
+        this.localStream.getAudioTracks()[0].enabled = false;
+      } else {
+        this.localStream.getAudioTracks()[0].enabled = true;
+      }*/
+    },
   },
   methods: {
     backToLogin() {
@@ -195,6 +208,7 @@ export default {
           this.localVideo.srcObject = stream;
 
           this.changeStreamTracks();
+          //this.checkSound();
 
           this.isShareDesktop = false;
         })
@@ -211,6 +225,7 @@ export default {
           this.localVideo.srcObject = stream;
 
           this.changeStreamTracks();
+          //this.checkSound();
 
           this.isShareDesktop = true;
         })
@@ -223,29 +238,28 @@ export default {
         .then((stream) => {
           this.localStream = stream;
           this.localVideo.srcObject = stream;
+
+          //this.checkSound();
         })
         .catch((err) => {
           console.log("goromm error", err);
         });
     },
-    onAddStream(event) {
-      let video = document.createElement("video");
-      video.srcObject = event.streams[0];
-      video.id = `remoteVideo${this.number}`;
-      video.style = "width: 100%; height: 100%; object-fit: fill;";
-      //video.autoplay = "autoplay";
-      video.addEventListener("loadedmetadata", () => {
-        video.play();
-        document.getElementById("video-grid").appendChild(video);
-        this.number++;
+    checkSound() {
+      this.soundMeter = new SoundMeter(this.audioContext);
+      let _this = this;
+      this.soundMeter.connectToSource(this.localStream, function (e) {
+        if (e) {
+          alert(e);
+          return;
+        }
+        _this.meterRefresh = setInterval(() => {
+          _this.instantMeter = _this.soundMeter.instant.toFixed(2);
+          _this.localStream.getAudioTracks()[0].enabled = true;
+        }, 1000);
       });
     },
     createOfferPeers(socketInfo, index) {
-      const tracks = this.localStream.getTracks();
-
-      const videoTrack = tracks.find((item) => item.kind == "video");
-      const audioTrack = tracks.find((item) => item.kind == "audio");
-
       this.rtcPeerConnection.push(new RTCPeerConnection(this.iceServers));
       this.rtcPeerConnection[index].socket_id = socketInfo.your;
       this.rtcPeerConnection[index].onicecandidate = (event) => {
@@ -262,9 +276,12 @@ export default {
         }
       };
       this.rtcPeerConnection[index].ontrack = (event) => {
-        let userVideo = document.getElementById(socketInfo.uuid);
+        const isUuid = this.videoAddedCounter.findIndex(
+          (item) => item == socketInfo.uuid
+        );
+        if (isUuid == -1) {
+          this.videoAddedCounter.push(socketInfo.uuid);
 
-        if (!userVideo) {
           let video = document.createElement("video");
           video.srcObject = event.streams[0];
           video.id = `${socketInfo.uuid}`;
@@ -272,15 +289,17 @@ export default {
           video.addEventListener("loadedmetadata", () => {
             video.play();
             document.getElementById("video-grid").appendChild(video);
+            const count = this.videoAddedCounter.findIndex(
+              (item) => item == socketInfo.uuid
+            );
+            this.videoAddedCounter.splice(count, 1);
           });
         }
       };
 
-      this.rtcPeerConnection[index].addTrack(videoTrack, this.localStream);
-
-      /* if (audioTrack) {
-        this.rtcPeerConnection[index].addTrack(audioTrack, this.localStream);
-      }*/
+      this.localStream.getTracks().forEach((track) => {
+        this.rtcPeerConnection[index].addTrack(track, this.localStream);
+      });
 
       this.rtcPeerConnection[index]
         .createOffer()
@@ -314,11 +333,6 @@ export default {
         });
     },
     createAnswer(socketInfo) {
-      const tracks = this.localStream.getTracks();
-
-      const videoTrack = tracks.find((item) => item.kind == "video");
-      const audioTrack = tracks.find((item) => item.kind == "audio");
-
       //console.log(socketInfo);
       this.rtcPeerConnection.push(new RTCPeerConnection(this.iceServers));
       this.rtcPeerConnection[this.rtcPeerConnection.length - 1].socket_id =
@@ -341,9 +355,12 @@ export default {
       this.rtcPeerConnection[this.rtcPeerConnection.length - 1].ontrack = (
         event
       ) => {
-        let userVideo = document.getElementById(socketInfo.uuid);
+        const isUuid = this.videoAddedCounter.findIndex(
+          (item) => item == socketInfo.uuid
+        );
+        if (isUuid == -1) {
+          this.videoAddedCounter.push(socketInfo.uuid);
 
-        if (!userVideo) {
           let video = document.createElement("video");
           video.srcObject = event.streams[0];
           video.id = `${socketInfo.uuid}`;
@@ -351,21 +368,20 @@ export default {
           video.addEventListener("loadedmetadata", () => {
             video.play();
             document.getElementById("video-grid").appendChild(video);
+            const count = this.videoAddedCounter.findIndex(
+              (item) => item == socketInfo.uuid
+            );
+            this.videoAddedCounter.splice(count, 1);
           });
         }
       };
 
-      this.rtcPeerConnection[this.rtcPeerConnection.length - 1].addTrack(
-        videoTrack,
-        this.localStream
-      );
-
-      /* if (audioTrack) {
+      this.localStream.getTracks().forEach((track) => {
         this.rtcPeerConnection[this.rtcPeerConnection.length - 1].addTrack(
-          audioTrack,
+          track,
           this.localStream
         );
-      }*/
+      });
 
       this.rtcPeerConnection[
         this.rtcPeerConnection.length - 1
@@ -428,7 +444,9 @@ export default {
     },
   },
   mounted() {
+    this.audioContext = new AudioContext();
     this.localVideo = document.getElementById("personalVideo");
+
     this.createMyVideo().then(() => {
       this.$store.state.mySocketInformation.clients.forEach((item, index) => {
         if (item.socket_id != this.$store.state.mySocketInformation.socket_id) {
