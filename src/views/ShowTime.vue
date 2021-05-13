@@ -26,6 +26,7 @@
       class="personalScreen"
       id="personalVideo"
       autoplay="autoplay"
+      muted
     ></video>
     <!-- Alt Bar -->
     <div class="container-fluid alt-bar">
