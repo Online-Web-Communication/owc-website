@@ -557,6 +557,10 @@ video {
     grid-template-columns: repeat(auto-fill, 150px);
     grid-auto-rows: 150px;
   }
+
+  .mobile-off {
+    display: none;
+  }
 }
 
 .alt-bar {
