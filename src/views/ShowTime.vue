@@ -270,7 +270,7 @@ export default {
             id: event.candidate.sdpMid,
             candidate: event.candidate.candidate,
             socket_id: socketInfo.your,
-            socket_id_your: socketInfo.my
+            your: socketInfo.my
           });
         }
       };
@@ -333,7 +333,7 @@ export default {
             id: event.candidate.sdpMid,
             candidate: event.candidate.candidate,
             socket_id: socketInfo.my,
-            socket_id_your: socketInfo.your
+            your: socketInfo.your
           });
         }
       };
@@ -428,10 +428,9 @@ export default {
     });
 
     this.$store.state.socket.on("candidate", (event) => {
-       const peerIndex = this.rtcPeerConnection.findIndex(
-        (item) => item.socket_id == event.socket_id_your
-      );
-      this.setCandidate(event, peerIndex);
+      const index = this.rtcPeerConnection.findIndex(item => item.socket_id == event.your)
+      console.log(index)
+      this.setCandidate(event, index);
     });
     this.$store.state.socket.on("joined", (socketInfo) => {
       this.createAnswer(socketInfo);
