@@ -16,7 +16,7 @@ Vue.use(IconsPlugin)
 
 Vue.config.productionTip = false
 
-import VuePeerJS from 'vue-peerjs';
+/*import VuePeerJS from 'vue-peerjs';
 import Peer from 'peerjs';
 
 Vue.use(VuePeerJS, new Peer({
@@ -27,7 +27,7 @@ Vue.use(VuePeerJS, new Peer({
       credentials: "Eq1fpwbkUTDNSJUW4w+Rh+n9Ulc=",
     },
   ],
-}));
+}));*/
 
 new Vue({
   router,
