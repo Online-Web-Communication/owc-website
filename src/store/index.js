@@ -57,7 +57,7 @@ export default new Vuex.Store({
 
     connectServer(context) {
 
-      context.state.socket = io("localhost:3000");
+      context.state.socket = io("weparley.com");
 
       if (context.state.socket.connected) return
 
