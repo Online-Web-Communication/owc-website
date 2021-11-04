@@ -89,9 +89,9 @@ export default {
       iceServers: {
         iceServers: [
           {
-            urls: "stun:18.195.35.248:3478",
-            username: "1619152553",
-            credentials: "Eq1fpwbkUTDNSJUW4w+Rh+n9Ulc=",
+            urls: "stun:3.68.95.209:3478",
+            username: "1636050382",
+            credentials: "oYCtcdG17kZEpukgi3Z2WEmezPQ=",
           },
         ],
       },
