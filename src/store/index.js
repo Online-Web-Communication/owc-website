@@ -14,7 +14,8 @@ export default new Vuex.Store({
     webStream: '',
     newPerson: '',
     roomList: [],
-    calls: ''
+    calls: '',
+    mySocketInformation: ''
   },
   mutations: {
     setPeer(state, peer) {
@@ -41,8 +42,8 @@ export default new Vuex.Store({
     setRoomList(state, data) {
       state.roomList = data
     },
-    setCall(state, peerConnection) {
-      state.calls = peerConnection
+    setMySocketInformation(state, mySocketInformation) {
+      state.mySocketInformation = mySocketInformation
     }
   },
   getters: {
@@ -51,6 +52,9 @@ export default new Vuex.Store({
     },
     getRoomList(state) {
       return state.roomList
+    },
+    getMySocketInformation(state) {
+      return state.mySocketInformation
     }
   },
   actions: {
@@ -64,43 +68,27 @@ export default new Vuex.Store({
       context.state.socket.on("connect", function () {
         console.log("bağlandı");
       });
+
       context.state.socket.on('event', function (data) {
         console.log(data)
       });
+
       context.state.socket.on('disconnect', function () {
         console.log('bağlantı disconnect')
       });
+
       context.state.socket.on('error', function (err) {
         console.log(err)
-      });
-
-      context.state.socket.on("user-connected", (userId) => {
-        context.commit('setNewPerson', userId)
-        console.log(userId);
-      });
-
-      context.state.socket.on("user-disconnected", (userId) => {
-        if (context.state.peers[userId]) context.commit('setClosePeerUser', userId)
       });
 
       context.state.socket.on("rooms", (rooms) => {
         context.commit('setRoomList', rooms)
       });
 
-    },
-
-    joinRoom(context, data) {
-      setTimeout(() => {
-
-        context.state.socket.emit("join-room", { roomId: data.roomId, userId: context.state.userId });
-      }, 2000)
-    },
-
-    openPeer(context) {
-      context.state.globalPeer.on("open", (userId) => {
-        context.commit('setUserId', userId)
+      context.state.socket.on("mySocket", (socketData) => {
+        context.commit('setMySocketInformation', socketData)
       });
-    }
+    },
   },
   modules: {
   }

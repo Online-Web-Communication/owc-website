@@ -1,6 +1,6 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
-import Login from '../views/Login.vue'
+import Login from '../views/Login2.vue'
 
 Vue.use(VueRouter)
 
@@ -13,7 +13,7 @@ const routes = [
   {
     path: '/room/:room',
     name: 'Room',
-    component: () => import('../views/CommunicationRoom.vue')
+    component: () => import('../views/ShowTime.vue')
   }
 ]
 
